@@ -19,6 +19,44 @@ pub fn process_symbols(symbols: Vec<Vec<char>>) -> Vec<(usize, usize)> {
     symbols_matches
 }
 
+pub fn process_symbols_two(symbols: Vec<Vec<char>>) -> Vec<(usize, usize)> {
+    let mut symbols_matches: Vec<(usize, usize)> = Vec::new();
+    for i in 0..symbols.len() {
+        for j in 0..symbols[i].len() {
+            let v = symbols[i][j];
+            if v == '*' {
+                symbols_matches.push((i, j));
+            }
+        }
+    }
+    symbols_matches
+}
+
+pub fn find_gear_ratio(symbol: (usize, usize), part_numbers: Vec<PartNumber>) -> usize {
+    let mut position_matches: Vec<usize> = vec![];
+    for i in 0..part_numbers.len() {
+        let positions = part_numbers[i].positions.clone();
+        if position_matches.len() > 2 {
+            return 0;
+        }
+        let mut matched_on_part_number = false;
+        for j in 0..positions.len() {
+            if matched_on_part_number {
+                continue;
+            }
+            let position = positions[j];
+            if generate_symbols_matches((position.0, position.1), symbol) {
+                position_matches.push(part_numbers[i].value);
+                matched_on_part_number = true;
+            }
+        }
+    }
+    if position_matches.len() == 2 {
+        return position_matches[0] * position_matches[1];
+    }
+    0
+}
+
 pub fn generate_symbols_matches(
     part_position: (usize, usize),
     symbol_position: (usize, usize),
@@ -161,6 +199,21 @@ pub fn part_one(input: &str) -> usize {
         .sum::<usize>()
 }
 
+pub fn part_two(input: &str) -> usize {
+    let mut lines = input.split("\n").collect::<Vec<&str>>();
+    if lines[lines.len() - 1] == "" {
+        lines.pop();
+    }
+    let symbols: Vec<(usize, usize)> =
+        process_symbols_two(lines.iter().map(|&l| l.chars().collect()).collect());
+    let part_numbers = get_part_numbers(lines);
+    // Create a map of all the possible part number positions
+    symbols
+        .iter()
+        .map(|&s| find_gear_ratio(s, part_numbers.clone()))
+        .sum::<usize>()
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -183,7 +236,7 @@ mod tests {
     }
 
     #[test]
-    fn it_works() {
+    fn test_part_one() {
         let input = "467..114..
 ...*......
 ..35..633.
@@ -195,5 +248,20 @@ mod tests {
 ...$.*....
 .664.598..";
         assert_eq!(part_one(input), 4361);
+    }
+
+    #[test]
+    fn test_part_two() {
+        let input = "467..114..
+...*......
+..35..633.
+......#...
+617*......
+.....+.58.
+..592.....
+......755.
+...$.*....
+.664.598..";
+        assert_eq!(part_two(input), 467835);
     }
 }
